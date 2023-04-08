@@ -1,6 +1,10 @@
 require('dotenv').config();
 
+
+const frameDestination = 'public/frames';
+
 const server = {
+    hostname: process.env.BASE_HOSTNAME || 'http://localhost',
     ip: process.env.IP || '0.0.0.0',
     port: process.env.PORT || '3000',
 };
@@ -20,4 +24,5 @@ module.exports = {
     server,
     token,
     database,
+    frameDestination,
 };

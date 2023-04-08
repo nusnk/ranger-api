@@ -1,6 +1,28 @@
 const config = require('./core/config');
 const express = require('express');
 const cors = require('cors');
+const multer  = require('multer');
+const path = require('path');
+const fs = require('fs');
+const apiRoutes = require('./routes');
+const crypto = require('crypto');
+const { includes } = require('lodash');
+
+const storage = multer.diskStorage({
+    destination: config.frameDestination,
+    filename: function (req, file, cb) {
+        const fileExt = file.originalname.split('.').pop();
+        const fileHash = crypto.createHash('md5').update(file.originalname).digest("hex");
+
+        cb(null, fileHash + '.' + fileExt);
+      }
+});
+
+const upload = multer({ storage })
+
+fs.mkdirSync(config.frameDestination, { recursive: true });
+
+const { DatabaseFactory } = require('./database');
 
 const app = express();
 
@@ -10,6 +32,24 @@ app.use(express.urlencoded({ extended: false}));
 
 app.get('/ping', (req, res) => {
     res.send('pong!');
+});
+
+
+app.use('/api', apiRoutes);
+
+app.post('/frames', upload.single('frame'), function (req, res, next) {
+   const relativePath = req.file.path.replace('public','');
+   const fullUrl = `${config.server.hostname}${relativePath}`;
+   res.json({
+    image_url: fullUrl,
+   })
+});
+
+app.use(express.static('public'));
+
+app.get('*', function(req, res, next){
+    if (includes(req.originalUrl, '/api')) return next();
+    res.sendFile(path.join(__dirname + '/public/index.html'));
 });
 
 app.use((req, res) => {
@@ -36,4 +76,6 @@ const initApplication = () => app.listen(config.server.port, config.server.ip, (
     console.log('Error happened:', error);
 });
 
-initApplication();
+DatabaseFactory.init(config.database.connectionURI)
+  .then(() => initApplication())
+  .catch(console.log);
