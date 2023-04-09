@@ -87,7 +87,7 @@ class BaseDocumentService {
     }
 
     async getMany(query = {}, options = {}, session) {
-        const { page = 1, size = 100, sort = { _id: 1 }, project = {} } = options;
+        const { page = 1, size = 10000, sort = { _id: 1 }, project = {} } = options;
         const queryWrapped = this._wrapFieldsWithObjectId(query);
         const collection = await this._getCollection();
         const entitiesFromDB =  await collection.find(queryWrapped, { session })
